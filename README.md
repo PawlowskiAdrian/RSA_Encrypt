@@ -90,7 +90,7 @@ Output will be tuple of bytes. For this example output with my keys `00001-key.k
 from rsa-encrypt import RSA_Encrypt as RE
 
 message = <output from encryption>
-rsa_handler = RE(message,encryption_size_multiplier=4)
+rsa_handler = RE(message)
 decrypted_data = rsa_handler.decrypt()
 ```
 
