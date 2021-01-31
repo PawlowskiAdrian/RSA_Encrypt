@@ -92,6 +92,7 @@ decrypted_data = rsa_handler.decrypt()
 ```
 
 Output will be tuple of strings. For this example output with my keys `00001-key.key` and `00001-key.pub` is:
+
 `('S', 'E', 'C', 'R', 'E', 'T')`
 
 If you will put more strings in tuple for encryption, output will generate full strings separately, not separate chars.
