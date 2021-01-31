@@ -44,7 +44,9 @@ rsa_handler = RE(message,key_path=key_path)
 ```
 
 Option 3) - WITHOUT your keys and with modified encryption size
-* Size min. is 256 * 4 = 1024. Your INPUT is INT, which is minimum 4
+* Size min. is 256 * 4 = 1024
+
+Your INPUT is INT, which is minimum 4
 `rsa_handler = RE(message,encryption_size_multiplier=32)`
 The bigger multiplier, the longer key generation and encryption/decryption will take place.
 
@@ -57,6 +59,7 @@ You are able to:
 - encrypt/decrypt data in `message` with `rsa_handler.encrypt()`, `rsa_handler.decrypt()`
 
 * requirements for DECRYPTION: Data in `message` has to be BINARY and output will be presented at UTF-8 standard.
+
 Route for encryption:
 DATA -> ENCODE -> ENCRYPT -> ENCRYPTED DATA
 
@@ -71,7 +74,7 @@ ENCRYPTED DATA -> DECRYPT -> DECODE -> DATA
 from rsa-encrypt import RSA_Encrypt as RE
 
 message = ('SECRET')
-rsa_handler = RE(message,encryption_size_multiplier=4)
+rsa_handler = RE(message)
 encrypted_data = rsa_handler.encrypt()
 ```
 
