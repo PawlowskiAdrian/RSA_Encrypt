@@ -114,6 +114,7 @@ rsa_pub_key = secure_handler._key_open_RSAPub()
 * requirements for DECRYPTION: 
 1) Data in `top_secret_data` has to be STRING DATA (output from ENCRYPTION).
 2) Folder with running script needs to have `data.bin` AND `c2.bin` (or SAME AES PRIV key instead of `c2.bin`)
+
 Route for encryption:
 DATA -> ENCODE -> ENCRYPT -> ENCRYPTED DATA
 
