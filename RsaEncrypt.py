@@ -2,6 +2,7 @@ from Crypto.PublicKey import RSA # to generate RSA keys, work with enc/dec
 from Crypto.Cipher import AES # to encrypt and decrypt long messages
 from hashlib import sha256 # to work with aes, generates sha256 based on input v1.0
 from Crypto.Protocol.KDF import PBKDF2 # to work with aes, generates key better than sha256 of password v2.0
+# from Crypto.Cipher.PKCS1_v1_5 import PKCS115_Cipher
 from Crypto import Random # to generate random numbers
 import base64 # to work with bytes
 
@@ -24,7 +25,7 @@ class Encryptor:
             self.__priv_key_RSA=None
             self.__pub_key_RSA=None
             if encryption_size_multiplier is not None: # encryption key size <-- force to create NEW key pairs
-                self.__encryption_size=256*min(int(encryption_size_multiplier),4)
+                self.__encryption_size=256*max(int(encryption_size_multiplier),4)
                 self.__key_path = self._find_key_path()
             else:
                 if key_path is not None: # specified custom key, if not -> create new key pair with default values
@@ -35,12 +36,12 @@ class Encryptor:
             # AES PART 256-bit encryption
             self.__priv_key_AES=None
             self.__BLOCK_SIZE = 16
-            self.__pad = lambda s: s + (self.__BLOCK_SIZE - len(s) % self.__BLOCK_SIZE) * chr(self.__BLOCK_SIZE - len(s) % self.__BLOCK_SIZE)
+            self.__pad = lambda s,BLOCK_SIZE: s + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * chr(BLOCK_SIZE - len(s) % BLOCK_SIZE)
             self.__unpad = lambda s: s[:-ord(s[len(s) - 1:])]
             self.__message=message # message to encrypt
             self.__c1=c1 # message to decrypt
             self.__c2=c2 # encrypted aes priv key
-
+            
             if aes_password is not None:
                 self.__aes_password = str(aes_password)
             else:
@@ -176,14 +177,24 @@ class Encryptor:
         self.__priv_key_RSA = priv_key
         self.__pub_key_RSA = pub_key
         return priv_key,pub_key
-
+    
     def _encrypt_aes(self,message,private_key_aes): # output = C1
-        message = self.__pad(message)
+        message = self.__pad(message,self.__BLOCK_SIZE)
         iv = Random.new().read(AES.block_size)
         cipher = AES.new(private_key_aes,AES.MODE_CBC,iv)
         return base64.b64encode(iv+cipher.encrypt(message))
 
     def _encrypt_rsa(self,private_key_aes,public_key_rsa): # output = C2
+        """
+        RSA maximum bytes to encrypt, comparison to AES in terms of ,
+        RSA, as defined by PKCS#1, encrypts "messages" of limited size.
+        the maximum size of data which can be encrypted with RSA is 245 bytes.
+        To get the size of the modulus of an RSA key call the function RSA_size.
+        The modulus size is the key size in bits / 8.
+        Thus a 1024-bit RSA key using OAEP padding can encrypt up to (1024/8) – 42 = 128 – 42 = 86 bytes.
+        A 2048-bit key can encrypt up to (2048/8) – 42 = 256 – 42 = 214 bytes.
+        """
+        # max_size_bytes= int(min(4096/8-42),245)
         # encrypt data ( data -> encode -> encrypt )
         # m_bytes = bytes(private_key_aes, 'utf-8') # convert to bytes from string
         # #? .encode('utf-8')
@@ -205,6 +216,55 @@ class Encryptor:
         # #? decoded = decrypted.decode()
         # return decoded.decode('utf-8') # convert to string from bytes
 
+    def _calc_blocks(self,input_len,block_size):
+        modulo = input_len%block_size
+        extra=0
+        if modulo > 0:
+            extra=1
+            input_len-=modulo
+        return int(input_len/block_size+extra)
+
+    def _encrypt_rsa_only(self,data,public_key_rsa):
+        if isinstance(data, str):
+            data_bytes = bytes(data, 'utf-8')
+        elif isinstance(data,bytes):
+            data_bytes = data
+        else:
+            raise TypeError('Data for encryption has to be STRING UTF-8 or BYTES')
+        enc_size_bytes=int(min(public_key_rsa.size()/8-42,245))
+        blocks = self._calc_blocks(len(data_bytes),enc_size_bytes)
+        output = bytes()
+        for n in range(blocks):
+            start = n*enc_size_bytes
+            end = (n+1)*enc_size_bytes
+            part = data_bytes[start:end]
+            encoded_data = base64.b64encode(part)
+            output += public_key_rsa.encrypt(encoded_data,32)[0]
+        return output
+
+    def _decrypt_rsa_only(self,data,private_key_rsa):
+        if not isinstance(data,bytes):
+            raise TypeError('Data for decryption has to be BYTES')
+        dec_size_bytes=512
+        if len(data) % dec_size_bytes != 0:
+            raise ValueError('Encrypted data has to be in 512 bytes block size')
+        decoded_data_bytes = bytes()
+        for n in range(round(len(data)/dec_size_bytes)):
+            start = n*dec_size_bytes
+            end = (n+1)*dec_size_bytes
+            part = data[start:end]
+            decrypted = private_key_rsa.decrypt(part)
+            decoded_data_bytes += base64.b64decode(decrypted)
+        return decoded_data_bytes
+
+    def encrypt_RSA(self):
+        self._key_open_RSAPub()
+        return self._encrypt_rsa_only(self.__message,self.__pub_key_RSA)
+
+    def decrypt_RSA(self):
+        self._key_open_RSAPriv()
+        return self._decrypt_rsa_only(self.__message,self.__priv_key_RSA)
+
     def encrypt(self):
         self._key_open_RSAPub()
         self._key_open_AESPriv()
@@ -223,15 +283,11 @@ class Encryptor:
         decoded = self._decrypt_aes(self.__c1,self.__priv_key_AES) # message
         return decoded.decode('utf-8')
 
-"""
-        RSA maximum bytes to encrypt, comparison to AES in terms of ,
-        RSA, as defined by PKCS#1, encrypts "messages" of limited size.
-        the maximum size of data which can be encrypted with RSA is 245 bytes.
-        To get the size of the modulus of an RSA key call the function RSA_size.
-        The modulus size is the key size in bits / 8.
-        Thus a 1024-bit RSA key using OAEP padding can encrypt up to (1024/8) – 42 = 128 – 42 = 86 bytes.
-        A 2048-bit key can encrypt up to (2048/8) – 42 = 256 – 42 = 214 bytes.
-        
+    def RSA_priv_key_size(self):
+        self._key_open_RSAPriv()
+        return self.__priv_key_RSA.size()
+
+"""      
         # max_size_bytes = int((self.key_size()+1)/8-42)
         # encrypted = bytes()
         # if max_size_bytes < len(encoded):
