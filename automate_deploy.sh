@@ -8,12 +8,12 @@ ssh $SSH_USER@$SSH_IP -p $SSH_PORT << EOF
 	exit
 EOF
 scp -P $SSH_PORT $SSH_USER@$SSH_IP:~/00001-key.pub ./00002-key.pub
-echo -e '1' | python3 SECURE.py
-scp -P $SSH_PORT ./DELIVERY/* $SSH_USER@$SSH_IP:~/
+echo -e '3' | python3 SECURE.py
+scp -P $SSH_PORT ${OUTPUT_FOLDER}/* $SSH_USER@$SSH_IP:~/
 ssh $SSH_USER@$SSH_IP -p $SSH_PORT << EOF
     cd ~/
-    echo -e '2' | python3 SECURE.py
-	cd DELIVERY
+    echo -e '4' | python3 SECURE.py
+	cd ${OUTPUT_FOLDER}
 	nohup python3 secret.py &
 	sleep 5
 	rm -r __pycache__/

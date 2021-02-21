@@ -146,7 +146,7 @@ elif mode_nr == '2' :
     print('Files decrypted. Saved in:',SAVE_PATH_HYBRID)
 elif mode_nr == '3' : 
     encryption_rsa()
-    print('Files decrypted. Saved in:',SAVE_PATH)
+    print('Files encrypted. Saved in:',SAVE_PATH)
 elif mode_nr == '4' : 
     decryption_rsa()
     print('Files decrypted. Saved in:',SAVE_PATH)
