@@ -1,4 +1,4 @@
-from RsaEncrypt import Encryptor as enc
+from v1.RsaEncrypt import Encryptor as enc
 from dotenv import load_dotenv
 from signal import signal, SIGINT
 import os
