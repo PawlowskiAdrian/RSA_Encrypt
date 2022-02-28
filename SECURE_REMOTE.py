@@ -113,7 +113,7 @@ signal(SIGINT, handler)
 if KEY_PATH is not None:
     print('Using imported keys:', KEY_PATH)
 
-file_list = ('secret.py','env_file')
+file_list = ('id_ed25519_MS','id_ed25519_MS.pub')
 
 print('Mode: 1 -> encryption hybrid\n\
 Mode: 2 -> decryption hybrid\n\
